@@ -1,9 +1,56 @@
 import numpy as np
 from itertools import combinations
 
-def get_embeddings():
+import sys
+import os
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+root_path = os.path.abspath(os.path.join(current_dir, ".."))
+if root_path not in sys.path:
+    sys.path.append(root_path)
+sys.path.append(os.path.join(root_path, "ImageBind"))
+
+import imagebind
+import torch
+from imagebind import data
+from imagebind.models import imagebind_model
+from imagebind.models.imagebind_model import ModalityType
+
+
+def init_imagebind_model():
+
+    # device = "cuda:0" if torch.cuda.is_available() else "cpu"
+
+    # # Instantiate model
+    # model = imagebind_model.imagebind_huge(pretrained=True)
+    # model.eval()
+    # model.to(device)
+
+    model = None
+    device = None
+
+    return model, device
+
+
+def get_embeddings(model, device, selected_objects):
 
     # TODO dynamically get the right ones
+    # text_list=["A dog.", "A car", "A bird", "A piano"]
+    # image_paths=[".assets/dog_image.jpg", ".assets/car_image.jpg", ".assets/bird_image.jpg", ".assets/piano_image.jpg"]
+    # audio_paths=[".assets/dog_audio.wav", ".assets/car_audio.wav", ".assets/bird_audio.wav", ".assets/piano_audio.wav"]
+
+    # # Load data
+    # inputs = {
+    #     ModalityType.TEXT: data.load_and_transform_text(text_list, device),
+    #     ModalityType.VISION: data.load_and_transform_vision_data(image_paths, device),
+    #     ModalityType.AUDIO: data.load_and_transform_audio_data(audio_paths, device),
+    # }
+
+    # with torch.no_grad():
+    #     embeddings = model(inputs)
+
+    # print(embeddings)
+    
 
     text_embeddings = {
         'bird': [1, 5],

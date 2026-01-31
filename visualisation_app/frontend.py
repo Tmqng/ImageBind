@@ -12,18 +12,6 @@ import numpy as np
 
 import backend
 
-import os
-
-root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-assets_path = os.path.join(root_path, ".assets")
-
-app = Dash(
-    __name__,
-    assets_folder=assets_path,
-    assets_url_path='my_assets'
-)
-
-
 object_options = [
     {'label': 'Bird', 'value': 'bird'},
     {'label': 'Car', 'value': 'car'},
@@ -31,48 +19,89 @@ object_options = [
     {'label': 'Piano', 'value': 'piano'}
 ] # this has to update dynamically depending on the content in .assets
 
-embeddings = backend.get_embeddings()
+model, device = backend.init_imagebind_model()
 
+def create_layout():
+    # 2. Define the Frontend (Layout)
+    app_layout = html.Div([
 
-# 2. Define the Frontend (Layout)
-app.layout = html.Div([
-    html.H1("Multimodal Embeddings Visualisation using ImageBind encoder", style={'textAlign': 'center', 'color': '#2c3e50'}),
-    
-    html.Div([
-        html.H4("Choose Objects", style={'marginBottom': '10px'}),
+        dcc.Store(id='embeddings-store', storage_type='memory'),
+
+        html.H1("Multimodal Embeddings Visualisation using ImageBind encoder", style={'textAlign': 'center', 'color': '#2c3e50'}),
+
+        html.Div([
+            html.H4("Choose Objects", style={'marginBottom': '10px'}),
+            
+            # A Core Component (Dropdown)
+            dcc.Dropdown(
+                id='object-selector',
+                options=object_options,
+                value=[opt['value'] for opt in object_options],
+                # values=[],
+                multi=True
+            ),
+        ]),
         
-        # A Core Component (Dropdown)
-        dcc.Dropdown(
-            id='object-selector',
-            options=object_options,
-            value=[opt['value'] for opt in object_options],
-            # values=[],
-            multi=True
-        ),
+        dbc.Row([
+            # 1. Left Column: Multimedia (Images/Audio)
+            dbc.Col(
+                id='multimedia-container', 
+                style={
+                    'flex': '1.5'  # Slightly wider than the calculation columns
+                }
+            ),
 
-        html.Div(id='multimedia-container', style={'marginTop': '20px'}),
+            # 2. Middle Column: Embeddings Logic
+            dbc.Col([
+                html.Button(
+                    "Compute Embeddings", 
+                    id='compute-embeddings-btn', 
+                    n_clicks=0,
+                    style={'width': '100%', 'marginBottom': '10px'}
+                ),
+                html.Pre(
+                    id='embeddings-vectors', 
+                    style={
+                        'border': '1px solid #ccc', 
+                        'padding': '10px', 
+                        'maxHeight': '600px', # Increased height for a vertical column
+                        'overflowY': 'auto',
+                        'backgroundColor': '#fff'
+                    }
+                ),
+            ], style={'flex': '1'}),
 
-        html.Button(
-            "Compute Embeddings", 
-            id='compute-embeddings-btn', 
-            n_clicks=0,
-            style={'marginTop': '10px', 'marginBottom': '10px'}
-        ),
+            # 3. Right Column: Dot Product Logic
+            dbc.Col([
+                html.Button(
+                    "Compute Dot Products", 
+                    id='compute-btn', 
+                    n_clicks=0,
+                    style={'width': '100%', 'marginBottom': '10px'}
+                ),
+                html.Pre(
+                    id='dot-products', 
+                    style={
+                        'border': '1px solid #ccc', 
+                        'padding': '10px', 
+                        'maxHeight': '600px', 
+                        'overflowY': 'auto',
+                        'backgroundColor': '#fff'
+                    }
+                ),
+            ], style={'flex': '1'})
 
+        ], style={
+            'display': 'flex',        # Makes the three main divs sit side-by-side
+            'flexDirection': 'row', 
+            'gap' : '5px',
+            'padding': '20px', 
+            'backgroundColor': '#f9f9f9',
+            'minHeight': '100vh'      # Ensures background spans full page height
+        })
+    ])
 
-        html.Pre(id='embeddings-vectors', style={'border': '1px solid #ccc', 'padding': '10px'}),
-
-        html.Button(
-            "Compute Dot Products", 
-            id='compute-btn', 
-            n_clicks=0,
-            style={'marginTop': '10px', 'marginBottom': '10px'}
-        ),
-
-        html.Pre(id='dot-products', style={'border': '1px solid #ccc', 'padding': '10px'}),
-
-    ], style={'padding': '20px', 'backgroundColor': '#f9f9f9'})
-])
+    return app_layout
 
 
 @callback(
@@ -90,19 +119,33 @@ def update_multimedia_display(selected_objects):
             html.H4(f"{obj.capitalize()}", style={'marginBottom': '10px'}),
             
             html.Div([
-                # 1. Image Component
+
+                # 1. Text Component
+                html.P(f"'A {obj.capitalize()}'"),
+
+                # 2. Image Component
                 html.Img(
                     src=f"my_assets/{obj}_image.jpg", 
-                    style={'width': '200px', 'borderRadius': '5px', 'marginRight': '20px'}
+                    style={'width': '200px', 'borderRadius': '5px'}
                 ),
                 
-                # 2. Audio Component
+                # 3. Audio Component
                 html.Audio(
                     src=f"my_assets/{obj}_audio.wav", 
                     controls=True
                 ),
 
-            ], style={'display': 'flex', 'alignItems': 'center', 'padding': '15px', 'border': '1px solid #ddd', 'marginBottom': '10px', 'backgroundColor': 'white'})
+            ], style={
+                    'display': 'flex', 
+                    'flexDirection': 'column',  # This stacks them vertically
+                    'alignItems': 'center',      # This centers them horizontally in the column
+                    'gap': '15px',
+                    'padding': '15px', 
+                    'border': '1px solid #ddd', 
+                    'marginBottom': '10px', 
+                    'backgroundColor': 'white',
+                    'width': 'fit-content'       # Ensures the border hugs the components
+                })
         ])
 
         rows.append(obj_card)
@@ -115,6 +158,10 @@ def update_multimedia_display(selected_objects):
         component_id='embeddings-vectors',
         component_property='children'
     ),
+    Output(
+        component_id='embeddings-store',
+        component_property='data'
+    ),
     Input(
         component_id='compute-embeddings-btn', 
         component_property='n_clicks'
@@ -126,6 +173,8 @@ def display_embeddings(n_clicks, selected_objects):
     # Filter the data based on selection
     if not selected_objects:
         return "No objects selected."
+    
+    embeddings = backend.get_embeddings(model, device, selected_objects)
 
     # Loop through each modality in the embeddings dict
     # and filter the inner dictionary based on selected_objects
@@ -134,7 +183,7 @@ def display_embeddings(n_clicks, selected_objects):
         for modality, data in embeddings.items()
     }
     
-    return json.dumps(filtered_output)
+    return json.dumps(filtered_output), embeddings
 
 
 @callback(
@@ -147,9 +196,10 @@ def display_embeddings(n_clicks, selected_objects):
         component_property='n_clicks'
     ),
     State('object-selector', 'value'),     # The data to use
+    State('embeddings-store', 'data'),
     prevent_initial_call=True              # Don't run on page load
 )
-def display_all_pairs_dot_products(n_clicks, selected_objects):
+def display_all_pairs_dot_products(n_clicks, selected_objects, embeddings):
     
     results = backend.compute_pairwise_dot_products(embeddings, selected_objects)
 
@@ -157,6 +207,3 @@ def display_all_pairs_dot_products(n_clicks, selected_objects):
         return "No data available for selected objects."
 
     return json.dumps(results, indent=4)
-
-if __name__ == '__main__':
-    app.run(debug=True)
