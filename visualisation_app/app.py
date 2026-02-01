@@ -16,4 +16,4 @@ app = Dash(
 app.layout = frontend.create_layout()
 
 if __name__ == '__main__':
-    app.run(mode='inline', port=8050, debug=True)
+    app.run(port=8050, debug=True)
