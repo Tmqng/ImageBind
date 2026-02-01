@@ -18,15 +18,15 @@ from imagebind.models.imagebind_model import ModalityType
 
 def init_imagebind_model():
 
-    # device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-    # # Instantiate model
-    # model = imagebind_model.imagebind_huge(pretrained=True)
-    # model.eval()
-    # model.to(device)
+    # Instantiate model
+    model = imagebind_model.imagebind_huge(pretrained=True)
+    model.eval()
+    model.to(device)
 
-    model = None
-    device = None
+    # model = None
+    # device = None
 
     return model, device
 
