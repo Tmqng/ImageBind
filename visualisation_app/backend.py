@@ -8,7 +8,6 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 root_path = os.path.abspath(os.path.join(current_dir, ".."))
 if root_path not in sys.path:
     sys.path.append(root_path)
-sys.path.append(os.path.join(root_path, "ImageBind"))
 
 import imagebind
 import torch
@@ -34,22 +33,21 @@ def init_imagebind_model():
 
 def get_embeddings(model, device, selected_objects):
 
-    # TODO dynamically get the right ones
-    # text_list=["A dog.", "A car", "A bird", "A piano"]
-    # image_paths=[".assets/dog_image.jpg", ".assets/car_image.jpg", ".assets/bird_image.jpg", ".assets/piano_image.jpg"]
-    # audio_paths=[".assets/dog_audio.wav", ".assets/car_audio.wav", ".assets/bird_audio.wav", ".assets/piano_audio.wav"]
+    text_list=[f"A {obj}" for obj in selected_objects]
+    image_paths=[f"my_assets/{obj}_image.jpg" for obj in selected_objects]
+    audio_paths=[f"my_assets/{obj}_audio.wav" for obj in selected_objects]
 
-    # # Load data
-    # inputs = {
-    #     ModalityType.TEXT: data.load_and_transform_text(text_list, device),
-    #     ModalityType.VISION: data.load_and_transform_vision_data(image_paths, device),
-    #     ModalityType.AUDIO: data.load_and_transform_audio_data(audio_paths, device),
-    # }
+    # Load data
+    inputs = {
+        ModalityType.TEXT: data.load_and_transform_text(text_list, device),
+        ModalityType.VISION: data.load_and_transform_vision_data(image_paths, device),
+        ModalityType.AUDIO: data.load_and_transform_audio_data(audio_paths, device),
+    }
 
-    # with torch.no_grad():
-    #     embeddings = model(inputs)
+    with torch.no_grad():
+        embeddings = model(inputs)
 
-    # print(embeddings)
+    print(embeddings)
     
 
     text_embeddings = {

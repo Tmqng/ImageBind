@@ -2,6 +2,8 @@ import pandas as pd
 import plotly.express as px
 from dash import callback, Dash, html, dcc, Input, Output, State, dash_table
 
+from dash import MATCH, ALL
+
 import dash_bootstrap_components as dbc
 
 from itertools import combinations
@@ -17,7 +19,7 @@ object_options = [
     {'label': 'Car', 'value': 'car'},
     {'label': 'Dog', 'value': 'dog'},
     {'label': 'Piano', 'value': 'piano'}
-] # this has to update dynamically depending on the content in .assets
+] # ideally this has to update dynamically depending on the content in .assets
 
 model, device = backend.init_imagebind_model()
 
@@ -41,63 +43,79 @@ def create_layout():
                 multi=True
             ),
         ]),
-        
-        dbc.Row([
-            # 1. Left Column: Multimedia (Images/Audio)
-            dbc.Col(
-                id='multimedia-container', 
-                style={
-                    'flex': '1.5'  # Slightly wider than the calculation columns
-                }
-            ),
 
-            # 2. Middle Column: Embeddings Logic
-            dbc.Col([
-                html.Button(
+        dbc.Row([
+            html.Button(
                     "Compute Embeddings", 
                     id='compute-embeddings-btn', 
                     n_clicks=0,
-                    style={'width': '100%', 'marginBottom': '10px'}
-                ),
-                html.Pre(
-                    id='embeddings-vectors', 
-                    style={
-                        'border': '1px solid #ccc', 
-                        'padding': '10px', 
-                        'maxHeight': '600px', # Increased height for a vertical column
-                        'overflowY': 'auto',
-                        'backgroundColor': '#fff'
-                    }
-                ),
-            ], style={'flex': '1'}),
+                    className="btn btn-primary me-3",
+                    style={'width': '25%', 'marginRight': '200px'}
+            ),
 
-            # 3. Right Column: Dot Product Logic
+            html.Button(
+                "Compute Dot Products", 
+                id='compute-btn', 
+                n_clicks=0,
+                className="btn btn-success",
+                style={'width': '25%'}
+            ),
+        ],
+        className="justify-content-end mb-3",
+        style={'paddingTop': '20px', 'paddingLeft': '450px'}),
+        
+        dbc.Row(id='main-container', children=[
+            # Column 1: Data
+            dbc.Col(
+                id='multimedia-container',
+                width=6,
+            ),
+
+            # Column 2: Embeddings
             dbc.Col([
-                html.Button(
-                    "Compute Dot Products", 
-                    id='compute-btn', 
-                    n_clicks=0,
-                    style={'width': '100%', 'marginBottom': '10px'}
+                html.H5("Embeddings"),             
+                dash_table.DataTable(
+                    id='embeddings-table',
+                    columns=[
+                        {"name": "Object", "id": "object"},
+                        {"name": "Modality", "id": "modality"},
+                        {"name": "Vector (Preview)", "id": "vector"}
+                    ],
+                    data=[],
+                    style_table={'height': '400px', 'overflowY': 'auto', 'maxWidth': '300px'},
+                    style_cell={
+                        'textAlign': 'left',
+                        'fontFamily': 'monospace',
+                        'padding': '10px'
+                    },
+                    style_header={
+                        'backgroundColor': 'rgb(230, 230, 230)',
+                        'fontWeight': 'bold'
+                    }
                 ),
+            ], width=4), # Exactly 1/3 of the row
+
+            # Column 3: Dot Products
+            dbc.Col([
+                html.H5("Alignment Scores", className="mb-3"),
                 html.Pre(
-                    id='dot-products', 
+                    id='dot-products',
                     style={
                         'border': '1px solid #ccc', 
                         'padding': '10px', 
-                        'maxHeight': '600px', 
+                        'maxHeight': '600px',
+                        'maxWidth': '300px', 
                         'overflowY': 'auto',
                         'backgroundColor': '#fff'
                     }
                 ),
-            ], style={'flex': '1'})
+            ], width=4) # Exactly 1/3 of the row
 
-        ], style={
-            'display': 'flex',        # Makes the three main divs sit side-by-side
-            'flexDirection': 'row', 
-            'gap' : '5px',
+        ], className="g-3", # Adds consistent spacing (gutters) between columns
+        style={
             'padding': '20px', 
             'backgroundColor': '#f9f9f9',
-            'minHeight': '100vh'      # Ensures background spans full page height
+            'minHeight': '100vh'
         })
     ])
 
@@ -106,7 +124,7 @@ def create_layout():
 
 @callback(
     Output('multimedia-container', 'children'),
-    Input('object-selector', 'value')
+    Input('object-selector', 'value'),
 )
 def update_multimedia_display(selected_objects):
     if not selected_objects:
@@ -114,49 +132,50 @@ def update_multimedia_display(selected_objects):
 
     rows = []
     for obj in selected_objects:
-        # Create a "Card" for each object
-        obj_card = dbc.Col([
-            html.H4(f"{obj.capitalize()}", style={'marginBottom': '10px'}),
-            
-            html.Div([
+        # Create a Row for each object
+        obj_row = dbc.Row([
+                    html.H4(f"{obj.capitalize()}", style={'marginBottom': '10px'}),
+                    
+                    dbc.Col([
 
-                # 1. Text Component
-                html.P(f"'A {obj.capitalize()}'"),
+                        # 1. Text Component
+                        html.P(f"'A {obj.capitalize()}'"),
 
-                # 2. Image Component
-                html.Img(
-                    src=f"my_assets/{obj}_image.jpg", 
-                    style={'width': '200px', 'borderRadius': '5px'}
-                ),
-                
-                # 3. Audio Component
-                html.Audio(
-                    src=f"my_assets/{obj}_audio.wav", 
-                    controls=True
-                ),
-
-            ], style={
-                    'display': 'flex', 
-                    'flexDirection': 'column',  # This stacks them vertically
-                    'alignItems': 'center',      # This centers them horizontally in the column
-                    'gap': '15px',
-                    'padding': '15px', 
-                    'border': '1px solid #ddd', 
-                    'marginBottom': '10px', 
-                    'backgroundColor': 'white',
-                    'width': 'fit-content'       # Ensures the border hugs the components
-                })
-        ])
-
-        rows.append(obj_card)
+                        # 2. Image Component
+                        html.Img(
+                            src=f"my_assets/{obj}_image.jpg", 
+                            style={'width': '150px'}
+                        ),
+                        
+                        # 3. Audio Component
+                        html.Audio(
+                            src=f"my_assets/{obj}_audio.wav", 
+                            controls=True,
+                            style={},
+                        ),
+                    ])
+                ], style={
+                        'display': 'flex', 
+                        'flexDirection': 'column',  # This stacks them vertically
+                        'alignItems': 'center',      # This centers them horizontally in the column
+                        'gap': '15px',
+                        'padding': '15px', 
+                        'border': '1px solid #ddd', 
+                        'marginBottom': '10px', 
+                        'backgroundColor': 'white',
+                        'width': 'fit-content'
+                    }
+                )
+        
+        rows.append(obj_row)    
 
     return rows
 
 
 @callback(
     Output(
-        component_id='embeddings-vectors',
-        component_property='children'
+        component_id='embeddings-table',
+        component_property='data'
     ),
     Output(
         component_id='embeddings-store',
@@ -182,8 +201,20 @@ def display_embeddings(n_clicks, selected_objects):
         modality: {obj: data[obj] for obj in selected_objects if obj in data}
         for modality, data in embeddings.items()
     }
+
+    # Transform dict to list of rows for the table
+    table_rows = []
+    for mod, objects in filtered_output.items():
+        for obj, vector in objects.items():
+            # Format vector preview: [0.12, -0.45, ...]
+            preview = "[" + ", ".join([f"{v:.2f}" for v in vector[:5]]) + " ...]"
+            table_rows.append({
+                "modality": mod,
+                "object": obj,
+                "vector": preview
+            })
     
-    return json.dumps(filtered_output), embeddings
+    return table_rows, embeddings
 
 
 @callback(
@@ -197,7 +228,8 @@ def display_embeddings(n_clicks, selected_objects):
     ),
     State('object-selector', 'value'),     # The data to use
     State('embeddings-store', 'data'),
-    prevent_initial_call=True              # Don't run on page load
+    prevent_initial_call=True,
+    suppress_callback_exceptions=True
 )
 def display_all_pairs_dot_products(n_clicks, selected_objects, embeddings):
     
