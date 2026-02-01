@@ -15,68 +15,48 @@ from imagebind import data
 from imagebind.models import imagebind_model
 from imagebind.models.imagebind_model import ModalityType
 
+import pickle
 
 def init_imagebind_model():
 
-    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    # device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-    # Instantiate model
-    model = imagebind_model.imagebind_huge(pretrained=True)
-    model.eval()
-    model.to(device)
+    # # Instantiate model
+    # model = imagebind_model.imagebind_huge(pretrained=True)
+    # model.eval()
+    # model.to(device)
 
-    # model = None
-    # device = None
+    model = None
+    device = None
 
     return model, device
 
-
 def get_embeddings(model, device, selected_objects):
 
-    text_list=[f"A {obj}" for obj in selected_objects]
-    image_paths=[f"my_assets/{obj}_image.jpg" for obj in selected_objects]
-    audio_paths=[f"my_assets/{obj}_audio.wav" for obj in selected_objects]
+    # text_list=[f"A {obj}" for obj in selected_objects]
+    # image_paths=[f"my_assets/{obj}_image.jpg" for obj in selected_objects]
+    # audio_paths=[f"my_assets/{obj}_audio.wav" for obj in selected_objects]
 
-    # Load data
-    inputs = {
-        ModalityType.TEXT: data.load_and_transform_text(text_list, device),
-        ModalityType.VISION: data.load_and_transform_vision_data(image_paths, device),
-        ModalityType.AUDIO: data.load_and_transform_audio_data(audio_paths, device),
-    }
+    # # Load data
+    # inputs = {
+    #     ModalityType.TEXT: data.load_and_transform_text(text_list, device),
+    #     ModalityType.VISION: data.load_and_transform_vision_data(image_paths, device),
+    #     ModalityType.AUDIO: data.load_and_transform_audio_data(audio_paths, device),
+    # }
 
-    with torch.no_grad():
-        embeddings = model(inputs)
+    # with torch.no_grad():
+    #     embeddings = model(inputs)
 
-    print(embeddings)
-    
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-    text_embeddings = {
-        'bird': [1, 5],
-        'car': [8, 2],
-        'dog': [2, 4],
-        'piano': [5, 8]
-    } 
+    modalities = ['audio', 'text', 'vision']
 
+    embeddings = {}
 
-    audio_embeddings = {
-        'bird': [1, 7],
-        'car': [8, 2],
-        'dog': [2, 3],
-        'piano': [5, 9]
-    } 
+    for mod in modalities:
 
-    vision_embeddings = {
-        'bird': [1, 7],
-        'car': [8, 2],
-        'dog': [2, 3],
-        'piano': [5, 9]
-    }
-
-    embeddings = {
-        "Text": text_embeddings,
-        "Audio" : audio_embeddings,
-        "Vision" : vision_embeddings
-    }
+        with open(f'my_assets/{mod}_embeddings.pt', 'rb') as f:
+            embeddings[mod] = torch.load(f, map_location=torch.device(device))
 
     return embeddings
 
