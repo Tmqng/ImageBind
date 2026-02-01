@@ -9,3 +9,7 @@ einops
 iopath
 numpy>=1.19
 types-regex
+
+dash
+dash-bootstrap-components
+pandas
