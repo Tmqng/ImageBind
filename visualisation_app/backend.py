@@ -79,7 +79,7 @@ def compute_dot_products(embeddings, selected_objects):
     
 
     products['VT'] = torch.softmax(vision_tensor @ text_tensor.T, dim=1)
-    products['AT'] = torch.softmax(vision_tensor @ audio_tensor.T, dim=1)
+    products['AT'] = torch.softmax(audio_tensor @ text_tensor.T, dim=1)
     products['VA'] = torch.softmax(vision_tensor @ audio_tensor.T, dim=1)
     
     return products
