@@ -44,12 +44,15 @@ def create_layout():
         ]),
 
         dbc.Row([
+            
+            # html.H5("Selected Objects"),
+
             html.Button(
                     "Compute Embeddings", 
                     id='compute-embeddings-btn', 
                     n_clicks=0,
                     className="btn btn-primary me-3",
-                    style={'width': '25%', 'marginRight': '200px'}
+                    style={'width': '25%', 'marginLeft': '450px'}
             ),
 
             html.Button(
@@ -57,11 +60,12 @@ def create_layout():
                 id='compute-products-btn', 
                 n_clicks=0,
                 className="btn btn-success",
-                style={'width': '25%'}
+                style={'width': '25%', 'marginLeft': '100px'}
             ),
         ],
         className="justify-content-end mb-3",
-        style={'paddingTop': '20px', 'paddingLeft': '500px'}),
+        style={'paddingTop': '20px'}
+        ),
         
         dbc.Row(id='main-container', children=[
             # Column 1: Data
