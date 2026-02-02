@@ -50,72 +50,48 @@ def create_layout():
                     id='compute-embeddings-btn', 
                     n_clicks=0,
                     className="btn btn-primary me-3",
-                    style={'width': '25%', 'marginRight': '200px'}
+                    style={'width': '25%', 'marginRight': '300px'}
             ),
 
             html.Button(
                 "Compute Dot Products", 
-                id='compute-btn', 
+                id='compute-products-btn', 
                 n_clicks=0,
                 className="btn btn-success",
                 style={'width': '25%'}
             ),
         ],
         className="justify-content-end mb-3",
-        style={'paddingTop': '20px', 'paddingLeft': '450px'}),
+        style={'paddingTop': '20px', 'paddingLeft': '600px'}),
         
         dbc.Row(id='main-container', children=[
             # Column 1: Data
             dbc.Col(
                 id='multimedia-container',
-                width=6,
+                width=4,
+                style={'display': 'flex', 'flexDirection': 'column', 'minHeight': '100vh'}
             ),
 
             # Column 2: Embeddings
-            dbc.Col([
-                html.H5("Embeddings"),             
-                dash_table.DataTable(
-                    id='embeddings-table',
-                    columns=[
-                        {"name": "Object", "id": "object"},
-                        {"name": "Modality", "id": "modality"},
-                        {"name": "Vector (Preview)", "id": "vector"}
-                    ],
-                    data=[],
-                    style_table={'height': '400px', 'overflowY': 'auto', 'maxWidth': '300px'},
-                    style_cell={
-                        'textAlign': 'left',
-                        'fontFamily': 'monospace',
-                        'padding': '10px'
-                    },
-                    style_header={
-                        'backgroundColor': 'rgb(230, 230, 230)',
-                        'fontWeight': 'bold'
-                    }
-                ),
-            ], width=4), # Exactly 1/3 of the row
+            dbc.Col(
+                id='embeddings-container',
+                width=4,
+                style={'display': 'flex', 'flexDirection': 'column', 'minHeight': '100vh'}
+            ),
 
             # Column 3: Dot Products
-            dbc.Col([
-                html.H5("Alignment Scores", className="mb-3"),
-                html.Pre(
-                    id='dot-products',
-                    style={
-                        'border': '1px solid #ccc', 
-                        'padding': '10px', 
-                        'maxHeight': '600px',
-                        'maxWidth': '300px', 
-                        'overflowY': 'auto',
-                        'backgroundColor': '#fff'
-                    }
-                ),
-            ], width=4) # Exactly 1/3 of the row
+            dbc.Col(
+                id='dot-products-container', 
+                width=4,
+                style={'display': 'flex', 'flexDirection': 'column', 'minHeight': '100vh'}
+            )
 
         ], className="g-3", # Adds consistent spacing (gutters) between columns
         style={
             'padding': '20px', 
             'backgroundColor': '#f9f9f9',
-            'minHeight': '100vh'
+            'minHeight': '100vh',
+            'display': 'flex'
         })
     ])
 
@@ -156,14 +132,12 @@ def update_multimedia_display(selected_objects):
                     ])
                 ], style={
                         'display': 'flex', 
-                        'flexDirection': 'column',  # This stacks them vertically
-                        'alignItems': 'center',      # This centers them horizontally in the column
-                        'gap': '15px',
+                        'flexDirection': 'column',
+                        'alignItems': 'center', 
                         'padding': '15px', 
                         'border': '1px solid #ddd', 
                         'marginBottom': '10px', 
                         'backgroundColor': 'white',
-                        'width': 'fit-content'
                     }
                 )
         
@@ -174,8 +148,8 @@ def update_multimedia_display(selected_objects):
 
 @callback(
     Output(
-        component_id='embeddings-table',
-        component_property='data'
+        component_id='embeddings-container',
+        component_property='children'
     ),
     Output(
         component_id='embeddings-store',
@@ -185,57 +159,119 @@ def update_multimedia_display(selected_objects):
         component_id='compute-embeddings-btn', 
         component_property='n_clicks'
     ),
-    State('object-selector', 'value'),     # The data to use
+    Input('object-selector', 'value'),     # The data to use
     prevent_initial_call=True              # Don't run on page load
 )
-def display_embeddings(n_clicks, selected_objects):
+def update_embeddings(n_clicks, selected_objects):
     # Filter the data based on selection
-    if not selected_objects:
-        return "No objects selected."
     
     embeddings = backend.get_embeddings(model, device, selected_objects)
 
-    # Loop through each modality in the embeddings dict
-    # and filter the inner dictionary based on selected_objects
-    filtered_output = {
-        modality: {obj: data[obj] for obj in selected_objects if obj in data}
-        for modality, data in embeddings.items()
-    }
+    rows = []
 
-    # Transform dict to list of rows for the table
-    table_rows = []
-    for mod, objects in filtered_output.items():
-        for obj, vector in objects.items():
-            # Format vector preview: [0.12, -0.45, ...]
-            preview = "[" + ", ".join([f"{v:.2f}" for v in vector[:5]]) + " ...]"
-            table_rows.append({
-                "modality": mod,
-                "object": obj,
-                "vector": preview
-            })
+    for obj in selected_objects:
+        # Create a Row for each object
+        obj_row = dbc.Row([
+
+        dash_table.DataTable(
+            id='modality-table',
+            columns=[
+                {"name": "Modality", "id": "modality"},
+                {"name": "Embeddings", "id": "embedding"}
+            ],
+            data=[
+                {"modality": "Text", "embedding": str(embeddings['text'][obj])},
+                {"modality": "Vision", "embedding": str(embeddings['vision'][obj])},
+                {"modality": "Audio", "embedding": str(embeddings['audio'][obj])}
+            ],
+            style_table={
+                'width': '500px',
+            },
+            style_cell={
+                'textAlign': 'left', 
+                'padding': '10px',
+                'maxWidth': '20px',      # Limits the width
+                'textOverflow': 'ellipsis', # Adds "..." at the end
+            },
+            style_header={
+                'backgroundColor': '#f2f2f2',
+                'fontWeight': 'bold'
+            }
+        )
+        ], style={
+            'marginBottom': '200px'
+        })
+        
+        rows.append(obj_row)    
     
-    return table_rows, embeddings
+    return rows, embeddings
 
 
 @callback(
     Output(
-        component_id='dot-products',
+        component_id='dot-products-container',
         component_property='children'
     ),
     Input(
-        component_id='compute-btn', 
+        component_id='compute-products-btn', 
         component_property='n_clicks'
     ),
-    State('object-selector', 'value'),     # The data to use
+    Input('object-selector', 'value'),     # The data to use
     State('embeddings-store', 'data'),
     prevent_initial_call=True,
     suppress_callback_exceptions=True
 )
-def display_all_pairs_dot_products(n_clicks, selected_objects, embeddings):
+def update_dot_products(n_clicks, selected_objects, embeddings):
     
-    results = backend.compute_pairwise_dot_products(embeddings, selected_objects)
+    products = backend.compute_dot_products(embeddings, selected_objects)
+    
+    row = dbc.Row([
 
-    if not results:
-        return "No data available for selected objects."
+        dash_table.DataTable(
+            id='product-table',
+            columns=[
+                {"name": "Modality", "id": "modality"},
+                {"name": "Dot product", "id": "dot_product"}
+            ],
+            data=[
+                {"modality": "Vision X Text", "dot_product": format_matrix(products['VT'])},
+                {"modality": "Audio X Text", "dot_product": format_matrix(products['AT'])},
+                {"modality": "Vision X Audio", "dot_product": format_matrix(products['VA'])}
+            ],
+            style_table={
+                'width': '500px',
+            },
+            style_data={
+                'whiteSpace': 'pre-line',
+                'height': 'auto',
+            },
+            style_cell={
+                'textAlign': 'left', 
+                'padding': '10px',
+                'maxWidth': '20px',      # Limits the width
+                'textOverflow': 'ellipsis', # Adds "..." at the end
+            },
+            style_header={
+                'backgroundColor': '#f2f2f2',
+                'fontWeight': 'bold'
+            }
+        )
+        ], style={
+            'marginBottom': '10px'
+        })
+    
+    return row
+    
 
-    return json.dumps(results, indent=4)
+def format_matrix(tensor):
+    # Convertit le tenseur en liste de listes (4x4)
+    matrix = tensor.detach().cpu().numpy().tolist()
+    
+    # Formate chaque ligne avec des crochets et 3 décimales
+    formatted_rows = []
+    for row in matrix:
+        row_str = ", ".join([f"{v: .3f}" for v in row])
+        formatted_rows.append(f"[{row_str}]")
+    
+    # Joint les lignes avec un saut de ligne
+    return "\n".join(formatted_rows)

@@ -9,13 +9,17 @@ root_path = os.path.abspath(os.path.join(current_dir, ".."))
 if root_path not in sys.path:
     sys.path.append(root_path)
 
+assets_path = os.path.join(root_path, ".assets")
+
 import imagebind
 import torch
 from imagebind import data
 from imagebind.models import imagebind_model
 from imagebind.models.imagebind_model import ModalityType
 
-import pickle
+import json
+
+MODALITIES = ['audio', 'text', 'vision']
 
 def init_imagebind_model():
 
@@ -47,44 +51,35 @@ def get_embeddings(model, device, selected_objects):
     # with torch.no_grad():
     #     embeddings = model(inputs)
 
-    device = "cuda:0" if torch.cuda.is_available() else "cpu"
-
-    modalities = ['audio', 'text', 'vision']
+    # device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
     embeddings = {}
 
-    for mod in modalities:
+    for mod in MODALITIES:
 
-        with open(f'my_assets/{mod}_embeddings.pt', 'rb') as f:
-            embeddings[mod] = torch.load(f, map_location=torch.device(device))
+        with open(f'{assets_path}/{mod}_embeddings.json', 'rb') as f:
+            # embeddings[mod] = torch.load(f, map_location=torch.device(device))
+            embeddings[mod] = json.load(f)
 
     return embeddings
 
 
-def compute_pairwise_dot_products(embeddings, selected_objects):
+def compute_dot_products(embeddings, selected_objects):
     """
     Logic for cross-modal alignment calculation.
     """
     if not selected_objects:
         return {}
 
-    mod_names = list(embeddings.keys())
-    mod_pairs = list(combinations(mod_names, 2))
-    results = {}
+    products = {}
 
-    for obj in selected_objects:
-        obj_results = {}
-        for mod1, mod2 in mod_pairs:
-            # Safely check if object exists in both modalities
-            if obj in embeddings.get(mod1, {}) and obj in embeddings.get(mod2, {}):
-                vec1 = np.array(embeddings[mod1][obj])
-                vec2 = np.array(embeddings[mod2][obj])
-                
-                dot_prod = np.dot(vec1, vec2)
-                pair_key = f"{mod1} * {mod2}"
-                obj_results[pair_key] = round(float(dot_prod), 4)
-        
-        if obj_results:
-            results[obj] = obj_results
-            
-    return results
+    audio_tensor = torch.tensor([v for k,v in embeddings['audio'].items() if k in selected_objects])
+    text_tensor = torch.tensor([v for k,v in embeddings['text'].items() if k in selected_objects])
+    vision_tensor = torch.tensor([v for k,v in embeddings['vision'].items() if k in selected_objects])
+    
+
+    products['VT'] = torch.softmax(vision_tensor @ text_tensor.T, dim=1)
+    products['AT'] = torch.softmax(vision_tensor @ audio_tensor.T, dim=1)
+    products['VA'] = torch.softmax(vision_tensor @ audio_tensor.T, dim=1)
+    
+    return products
