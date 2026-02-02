@@ -38,8 +38,7 @@ def create_layout():
             dcc.Dropdown(
                 id='object-selector',
                 options=object_options,
-                value=[opt['value'] for opt in object_options],
-                # values=[],
+                # value=[opt['value'] for opt in object_options],
                 multi=True
             ),
         ]),
@@ -50,7 +49,7 @@ def create_layout():
                     id='compute-embeddings-btn', 
                     n_clicks=0,
                     className="btn btn-primary me-3",
-                    style={'width': '25%', 'marginRight': '300px'}
+                    style={'width': '25%', 'marginRight': '200px'}
             ),
 
             html.Button(
@@ -100,11 +99,14 @@ def create_layout():
 
 @callback(
     Output('multimedia-container', 'children'),
+    Output('embeddings-container', 'children', allow_duplicate=True),
+    Output('dot-products-container', 'children', allow_duplicate=True),
     Input('object-selector', 'value'),
+    prevent_initial_call=True
 )
 def update_multimedia_display(selected_objects):
     if not selected_objects:
-        return "Select objects to view"
+        return None, None, None
 
     rows = []
     for obj in selected_objects:
@@ -147,13 +149,14 @@ def update_multimedia_display(selected_objects):
         
         rows.append(obj_row)    
 
-    return rows
+    return rows, None, None
 
 
 @callback(
     Output(
         component_id='embeddings-container',
-        component_property='children'
+        component_property='children',
+        allow_duplicate=True
     ),
     Output(
         component_id='embeddings-store',
@@ -163,11 +166,13 @@ def update_multimedia_display(selected_objects):
         component_id='compute-embeddings-btn', 
         component_property='n_clicks'
     ),
-    Input('object-selector', 'value'),     # The data to use
-    prevent_initial_call=True              # Don't run on page load
+    State('object-selector', 'value'),
+    prevent_initial_call=True
 )
 def update_embeddings(n_clicks, selected_objects):
     # Filter the data based on selection
+    if not selected_objects:
+        return None, None
     
     embeddings = backend.get_embeddings(model, device, selected_objects)
 
@@ -214,18 +219,21 @@ def update_embeddings(n_clicks, selected_objects):
 @callback(
     Output(
         component_id='dot-products-container',
-        component_property='children'
+        component_property='children',
+        allow_duplicate=True
     ),
     Input(
         component_id='compute-products-btn', 
         component_property='n_clicks'
     ),
-    Input('object-selector', 'value'),     # The data to use
+    State('object-selector', 'value'),     # The data to use
     State('embeddings-store', 'data'),
     prevent_initial_call=True,
     suppress_callback_exceptions=True
 )
 def update_dot_products(n_clicks, selected_objects, embeddings):
+    if not selected_objects:
+        return None
     
     products = backend.compute_dot_products(embeddings, selected_objects)
     
