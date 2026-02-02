@@ -115,10 +115,9 @@ print(
 #         [0.0018, 0.0022, 0.9960]])
 
 ```
-These models require a lot of computation to be run. You can run these commands in Kaggle with the provided notebook 
+These models require a lot of computation to be run. You can run these commands in Kaggle with the provided notebook imagebind-demo_kaggle.ipynb. 
+First, you need to create the notebook via the (+ New Notebook) button in https://www.kaggle.com/models/metaresearch/imagebind. This will load the required checkpoints (model weights)
 
-## Model card
-Please see the [model card](model_card.md) for details.
 
 ## License
 
