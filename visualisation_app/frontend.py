@@ -62,7 +62,7 @@ def create_layout():
             ),
         ],
         className="justify-content-end mb-3",
-        style={'paddingTop': '20px', 'paddingLeft': '600px'}),
+        style={'paddingTop': '20px', 'paddingLeft': '500px'}),
         
         dbc.Row(id='main-container', children=[
             # Column 1: Data
@@ -76,14 +76,14 @@ def create_layout():
             dbc.Col(
                 id='embeddings-container',
                 width=4,
-                style={'display': 'flex', 'flexDirection': 'column', 'minHeight': '100vh'}
+                style={'display': 'flex', 'flexDirection': 'column', 'minHeight': '100vh', 'paddingLeft': '20px'}
             ),
 
             # Column 3: Dot Products
             dbc.Col(
                 id='dot-products-container', 
                 width=4,
-                style={'display': 'flex', 'flexDirection': 'column', 'minHeight': '100vh'}
+                style={'display': 'flex', 'flexDirection': 'column', 'minHeight': '100vh', 'paddingLeft': '20px'}
             )
 
         ], className="g-3", # Adds consistent spacing (gutters) between columns
@@ -115,21 +115,21 @@ def update_multimedia_display(selected_objects):
                     dbc.Col([
 
                         # 1. Text Component
-                        html.P(f"'A {obj.capitalize()}'"),
+                        html.P(f"'A {obj.capitalize()}'", style={'margin': '5px 0'}),
 
                         # 2. Image Component
                         html.Img(
                             src=f"my_assets/{obj}_image.jpg", 
-                            style={'width': '150px'}
+                            style={'width': '150px', 'height': 'auto', 'maxHeight': '100px', 'objectFit': 'contain', 'margin': '5px 0'}
                         ),
                         
                         # 3. Audio Component
                         html.Audio(
                             src=f"my_assets/{obj}_audio.wav", 
                             controls=True,
-                            style={},
+                            style={'width': '200px', 'margin': '5px 0'},
                         ),
-                    ])
+                    ], style={'display': 'flex', 'flexDirection': 'column', 'justifyContent': 'space-around', 'height': '100%'})
                 ], style={
                         'display': 'flex', 
                         'flexDirection': 'column',
@@ -138,6 +138,10 @@ def update_multimedia_display(selected_objects):
                         'border': '1px solid #ddd', 
                         'marginBottom': '10px', 
                         'backgroundColor': 'white',
+                        'height': '300px',
+                        'minHeight': '300px',
+                        'width': '300px',
+                        'minWidth': '300px',
                     }
                 )
         
